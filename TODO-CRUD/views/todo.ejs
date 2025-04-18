@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>To-Do List</title>
+    <style>
+      body {
+        background: #f7f7f7;
+        font-family: "Segoe UI", sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .todo-container {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        width: 300px;
+        text-align: center;
+      }
+
+      h2 {
+        margin-bottom: 20px;
+        color: #333;
+      }
+
+      .input-section {
+        display: flex;
+        gap: 10px;
+      }
+
+      input[type="text"] {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+      }
+
+      button {
+        padding: 10px 15px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin-top: 20px;
+      }
+
+      li {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      li button {
+        background-color: red;
+        border: none;
+        color: white;
+        padding: 5px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      li button:hover {
+        background-color: darkred;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="todo-container">
+      <h2>📝 To-Do List</h2>
+      <!-- <form action="/todos/add" method="post"> -->
+      <div class="input-section">
+        <input type="text" id="task-input" placeholder="Add a new task..." />
+        <button type="submit" onclick="addTask()">Add</button>
+      </div>
+    <!-- </form> -->
+      <ul id="task-list"></ul>
+    </div>
+
+    <script>
+      const apiUrl = "http://localhost:5000/api/todos";
+    
+      async function fetchTodos() {
+        const res = await fetch(apiUrl);
+        const todos = await res.json();
+        const list = document.getElementById("task-list");
+        list.innerHTML = "";
+    
+        todos.forEach((todo) => {
+          const li = document.createElement("li");
+    
+          li.innerHTML = `
+            <span contenteditable="false" id="task-${todo._id}">${todo.task}</span>
+            <div>
+              <button onclick="enableEdit('${todo._id}')">Edit</button>
+              <button onclick="updateTodo('${todo._id}')">Save</button>
+              <button onclick="deleteTodo('${todo._id}')">Delete</button>
+            </div>
+          `;
+    
+          list.appendChild(li);
+        });
+      }
+    
+      async function addTask() {
+        const input = document.getElementById("task-input");
+        const task = input.value.trim();
+        if (!task) return alert("Enter a task");
+    
+        await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ task })
+        });
+    
+        input.value = "";
+        fetchTodos();
+      }
+    
+      async function deleteTodo(id) {
+        await fetch(`${apiUrl}/${id}`, { method: "DELETE" });
+        fetchTodos();
+      }
+    
+      function enableEdit(id) {
+        const taskSpan = document.getElementById(`task-${id}`);
+        taskSpan.contentEditable = true;
+        taskSpan.focus();
+      }
+    
+      async function updateTodo(id) {
+        const taskSpan = document.getElementById(`task-${id}`);
+        const updatedTask = taskSpan.innerText.trim();
+        if (!updatedTask) return alert("Task cannot be empty");
+    
+        await fetch(`${apiUrl}/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ task: updatedTask })
+        });
+    
+        taskSpan.contentEditable = false;
+        fetchTodos();
+      }
+    
+      fetchTodos();
+    </script>
+    
+  </body>
+</html>
